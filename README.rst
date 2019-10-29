@@ -5,7 +5,7 @@ sshmenu
 
 .. code-block:: bash
 
-   sshmemu -c selboo
+   sshmenu -c selboo
 
 .. code-block:: bash
 
