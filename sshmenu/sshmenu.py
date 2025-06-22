@@ -50,7 +50,8 @@ def main():
                     'friendly': 'This is an example target using mosh',
                     'options': []
                 }
-            ]
+            ],
+            'saved_last_chosen_index': 0
         }
         resources.user.write(config_name, json.dumps(example_config, indent=4))
 
@@ -87,8 +88,6 @@ def display_help():
 
 
 def connection_create():
-    global config_name
-
     call(['clear'])
     puts(colored.cyan('Create new connection entry'))
     puts('')
@@ -123,8 +122,6 @@ def connection_create():
 
 
 def connection_edit(selected_target):
-    global targets, config_name
-
     call(['clear'])
     puts(colored.cyan('Editing connection %s' % targets[selected_target]['host']))
     puts('')
@@ -159,8 +156,6 @@ def connection_edit(selected_target):
 
 
 def connection_delete(selected_target):
-    global targets, config_name
-
     call(['clear'])
     puts(colored.red('Delete connection entry for %s' % targets[selected_target]['host']))
     puts('')
@@ -188,8 +183,6 @@ def connection_delete(selected_target):
 
 
 def connection_move_up(selected_target):
-    global config_name
-
     config = json.loads(resources.user.read(config_name))
     config['targets'].insert(selected_target - 1, config['targets'].pop(selected_target))
 
@@ -198,8 +191,6 @@ def connection_move_up(selected_target):
 
 
 def connection_move_down(selected_target):
-    global config_name
-
     config = json.loads(resources.user.read(config_name))
     config['targets'].insert(selected_target + 1, config['targets'].pop(selected_target))
 
@@ -208,21 +199,30 @@ def connection_move_down(selected_target):
 
 
 def update_targets():
-    global targets, config_name
+    global targets
 
     config = json.loads(resources.user.read(config_name))
     if 'targets' in config:
         targets = config['targets']
 
 
-def display_menu():
-    global targets
+def get_last_selected_target_index():
+    config = json.loads(resources.user.read(config_name))
+    return config.get('saved_last_chosen_index', 0)
 
+
+def save_last_selected_target_index(index: int):
+    config = json.loads(resources.user.read(config_name))
+    config['saved_last_chosen_index'] = index
+    resources.user.write(config_name, json.dumps(config, indent=4))
+
+
+def display_menu():
     # Save current cursor position so we can overwrite on list updates
     call(['tput', 'clear', 'sc'])
 
-    # Keep track of currently selected target
-    selected_target = 0
+    # Keep track of currently selected target, read from config file the last chosen one to select
+    selected_target = get_last_selected_target_index()
 
     # Support input of long numbers
     number_buffer = []
@@ -334,6 +334,9 @@ def display_menu():
                 selected_target = new_selection - 1
 
         elif key == readchar.key.ENTER and num_targets > 0:
+            # Save the chosen index into the config
+            save_last_selected_target_index(selected_target)
+
             # For cleanliness clear the screen
             call(['tput', 'clear'])
 
